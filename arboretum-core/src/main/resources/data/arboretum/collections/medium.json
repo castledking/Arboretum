@@ -1,0 +1,14 @@
+{
+  "id": "arboretum:medium",
+  "schema": 1,
+  "display_name": "Medium",
+  "description": "Every shipped species, across broadleaf, conifer and wetland forms. The recommended default for most players.",
+  "built_in": true,
+  "species": [
+    "arboretum:baobab",
+    "arboretum:jacaranda",
+    "arboretum:bald_cypress",
+    "arboretum:italian_cypress"
+  ],
+  "overrides": {}
+}

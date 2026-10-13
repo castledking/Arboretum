@@ -1,0 +1,17 @@
+{
+  "id": "arboretum:savanna",
+  "schema": 1,
+  "display_name": "Savanna and dry woodland",
+  "description": "Species of hot, seasonally dry country. Thematic collection; useful on its own or added to a custom set.",
+  "built_in": true,
+  "species": [
+    "arboretum:baobab",
+    "arboretum:italian_cypress"
+  ],
+  "overrides": {
+    "arboretum:baobab": {
+      "weight": 4,
+      "note": "Baobabs dominate a savanna skyline, so they are drawn more often than they would be in a mixed collection."
+    }
+  }
+}

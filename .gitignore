@@ -1,0 +1,18 @@
+# Build output
+build/
+.gradle/
+*.class
+out/
+run/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Not tracked: the working design notes and the previous session's transcript
+docs/design.md
+session.md
+
+# Scratch left at the root
+/Debug.java

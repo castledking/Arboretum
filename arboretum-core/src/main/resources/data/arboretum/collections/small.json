@@ -1,0 +1,13 @@
+{
+  "id": "arboretum:small",
+  "schema": 1,
+  "display_name": "Small",
+  "description": "Three visually distinctive species: the baobab, the jacaranda and the Italian cypress. Each has a silhouette you recognise from a distance, which is the point of a first collection.",
+  "built_in": true,
+  "species": [
+    "arboretum:baobab",
+    "arboretum:jacaranda",
+    "arboretum:italian_cypress"
+  ],
+  "overrides": {}
+}

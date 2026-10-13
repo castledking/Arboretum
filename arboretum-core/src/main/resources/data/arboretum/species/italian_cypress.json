@@ -1,0 +1,75 @@
+{
+  "id": "arboretum:italian_cypress",
+  "schema": 1,
+
+  "botany": {
+    "common_name": "Italian cypress",
+    "scientific_name": "Cupressus sempervirens",
+    "genus": "Cupressus",
+    "family": "Cupressaceae",
+    "native_range": "The eastern Mediterranean, from Greece and the Balkans through Anatolia and the Levant to the western Himalayas.",
+    "habitat": "Rocky slopes and dry hill country on well-drained, often poor soil. Also widely planted as an ornamental and as a windbreak.",
+    "climate": "Mediterranean: hot, dry summers and mild, wet winters.",
+    "distinguishing_characteristics": [
+      "A very narrow, dense, columnar crown, in the familiar 'pencil' form.",
+      "Dark green, scale-like foliage held close to the branches.",
+      "A trunk that stays slender even on old trees.",
+      "Small, rounded cones."
+    ],
+    "interesting_facts": [
+      "The columnar form is prized so much that it has been selected for for millennia; wild trees are broader and irregular.",
+      "Cypress wood is aromatic and resistant to decay, and has long been used in Mediterranean construction."
+    ],
+    "reference_urls": [
+      "https://powo.science.kew.org/"
+    ],
+    "attribution": "Botanical summary compiled for Arboretum. Verify against the Kew Plants of the World Online record for Cupressus sempervirens before treating any specific figure as authoritative.",
+    "verified": [
+      "scientific_name",
+      "genus",
+      "family",
+      "native_range"
+    ]
+  },
+
+  "visuals": {
+    "carrier_block": "minecraft:spruce_log",
+    "log_block": "minecraft:spruce_log",
+    "leaf_block": "minecraft:spruce_leaves",
+    "leaf_cutout": true,
+    "assets": {
+      "note": "Spruce blocks already give the dark, dense conifer read, so the resource pack leaves them largely alone."
+    }
+  },
+
+  "structure": {
+    "trunk_template": "data/arboretum/templates/italian_cypress/trunk.nbt",
+    "canopy_template": "data/arboretum/templates/italian_cypress/canopy.nbt",
+    "log_markers": ["minecraft:spruce_log"],
+    "leaf_markers": ["minecraft:spruce_leaves"],
+    "extra_markers": {},
+    "growable_on": ["minecraft:dirt", "minecraft:grass_block", "minecraft:coarse_dirt", "minecraft:podzol", "minecraft:stone"],
+    "leaf_filter": [],
+    "log_filter": [],
+    "replaceable_blocks": "BLOCK",
+    "max_log_depth": 2,
+    "random_rotation": true,
+    "allow_mirroring": false
+  },
+
+  "ecology": {
+    "biomes": [
+      "minecraft:desert",
+      "minecraft:badlands",
+      "minecraft:savanna",
+      "minecraft:windswept_savanna",
+      "minecraft:meadow"
+    ],
+    "biome_tags": [],
+    "ground_blocks": ["minecraft:dirt", "minecraft:grass_block", "minecraft:coarse_dirt", "minecraft:podzol"],
+    "temperature": [0.4, 1.0],
+    "moisture": [0.0, 0.4],
+    "weight": 2,
+    "rarity": "UNCOMMON"
+  }
+}

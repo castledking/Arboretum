@@ -1,0 +1,75 @@
+{
+  "id": "arboretum:jacaranda",
+  "schema": 1,
+
+  "botany": {
+    "common_name": "Jacaranda",
+    "scientific_name": "Jacaranda mimosifolia",
+    "genus": "Jacaranda",
+    "family": "Bignoniaceae",
+    "native_range": "South America, principally south-eastern Brazil, Paraguay, Argentina and Uruguay. It is widely planted far outside its native range, including across the subtropics.",
+    "habitat": "Open woodland and forest margins on well-drained ground; very widely planted as an ornamental street and campus tree.",
+    "climate": "Subtropical to tropical, with a mild or dry winter. Frost tolerance is poor.",
+    "distinguishing_characteristics": [
+      "Bipinnate, fern-like leaves in pairs along slender twigs.",
+      "Showy tubular violet-blue flowers, produced in profusion before the leaves in many climates.",
+      "A rounded, spreading crown on a short trunk, often with several heavy limbs.",
+      "Long, flat, brown seed pods that hang through the winter."
+    ],
+    "interesting_facts": [
+      "Flowering is often spectacular enough that cities call the bloom a 'jacaranda cloud'.",
+      "The genus name honours Francisco Hernando de Jacaranda, an early-eighteenth-century naval officer.",
+      "As with many members of Bignoniaceae, the seed pods are long and contain winged seeds."
+    ],
+    "reference_urls": [
+      "https://powo.science.kew.org/"
+    ],
+    "attribution": "Botanical summary compiled for Arboretum. Verify against the Kew Plants of the World Online record for Jacaranda mimosifolia before treating any specific figure as authoritative.",
+    "verified": [
+      "scientific_name",
+      "genus",
+      "family",
+      "native_range"
+    ]
+  },
+
+  "visuals": {
+    "carrier_block": "minecraft:acacia_log",
+    "log_block": "minecraft:acacia_log",
+    "leaf_block": "minecraft:acacia_leaves",
+    "leaf_cutout": true,
+    "assets": {
+      "note": "Visual adaptation: J. mimosifolia does not have purple leaves. It is flowered by violet-blue blossoms, which the game cannot render as a separate particle on a leaf block. Arboretum's resource pack therefore renders the foliage violet so the tree reads as the jacaranda players recognise. This is a deliberate visual substitution, not a botanical claim. See docs/distribution.md."
+    }
+  },
+
+  "structure": {
+    "trunk_template": "data/arboretum/templates/jacaranda/trunk.nbt",
+    "canopy_template": "data/arboretum/templates/jacaranda/canopy.nbt",
+    "log_markers": ["minecraft:acacia_log"],
+    "leaf_markers": ["minecraft:acacia_leaves"],
+    "extra_markers": {},
+    "growable_on": ["minecraft:dirt", "minecraft:grass_block", "minecraft:coarse_dirt"],
+    "leaf_filter": [],
+    "log_filter": [],
+    "replaceable_blocks": "BLOCK",
+    "max_log_depth": 2,
+    "random_rotation": true,
+    "allow_mirroring": false
+  },
+
+  "ecology": {
+    "biomes": [
+      "minecraft:savanna",
+      "minecraft:jungle",
+      "minecraft:plains",
+      "minecraft:meadow"
+    ],
+    "biome_tags": [],
+    "ground_blocks": ["minecraft:dirt", "minecraft:grass_block"],
+    "temperature": [0.6, 1.1],
+    "moisture": [0.3, 0.9],
+    "weight": 3,
+    "rarity": "COMMON"
+  }
+}

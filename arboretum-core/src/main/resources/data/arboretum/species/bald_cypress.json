@@ -1,0 +1,79 @@
+{
+  "id": "arboretum:bald_cypress",
+  "schema": 1,
+
+  "botany": {
+    "common_name": "Bald cypress",
+    "scientific_name": "Taxodium distichum",
+    "genus": "Taxodium",
+    "family": "Cupressaceae",
+    "native_range": "The south-eastern and south-central United States: the coastal plain, the Mississippi and lower Ohio valleys, and parts of Mexico.",
+    "habitat": "Wet ground. Grows in swamps, floodplains and along river margins where the roots stand in standing water for part of the year.",
+    "climate": "Humid subtropical to warm temperate, with a substantial annual rainfall and periodic flooding.",
+    "distinguishing_characteristics": [
+      "A tall, straight, columnar trunk with reddish-brown, fibrous, furrowed bark.",
+      "A broad, irregular crown of fine-textured, feathery foliage.",
+      "Flared buttresses at the base, often with conspicuous vertical ridges.",
+      "Cypress knees: conical projections of root that rise above the water around an old tree.",
+      "Deciduous unlike most conifers: the needles turn russet and fall in autumn."
+    ],
+    "interesting_facts": [
+      "It is one of the few conifers that sheds its needles, which is where the name 'bald' comes from.",
+      "The buttresses and knees are thought to help the tree stand in waterlogged, poorly aerated soil.",
+      "The wood is famously resistant to rot, which is why it was widely used for pilings and fences."
+    ],
+    "reference_urls": [
+      "https://powo.science.kew.org/"
+    ],
+    "attribution": "Botanical summary compiled for Arboretum. Verify against the Kew Plants of the World Online record for Taxodium distichum before treating any specific figure as authoritative.",
+    "verified": [
+      "scientific_name",
+      "genus",
+      "family",
+      "native_range"
+    ]
+  },
+
+  "visuals": {
+    "carrier_block": "minecraft:mangrove_log",
+    "log_block": "minecraft:mangrove_log",
+    "log_top_block": "minecraft:mangrove_log",
+    "root_block": "minecraft:mangrove_roots",
+    "leaf_block": "minecraft:mangrove_leaves",
+    "leaf_cutout": false,
+    "assets": {
+      "note": "Mangrove blocks stand in for cypress because they are the only vanilla block with a distinct, root-like state. The resource pack retextures them pale so they read as cypress rather than mangrove. See docs/distribution.md."
+    }
+  },
+
+  "structure": {
+    "trunk_template": "data/arboretum/templates/bald_cypress/trunk.nbt",
+    "canopy_template": "data/arboretum/templates/bald_cypress/canopy.nbt",
+    "roots_template": "data/arboretum/templates/bald_cypress/roots.nbt",
+    "log_markers": ["minecraft:mangrove_log"],
+    "leaf_markers": ["minecraft:mangrove_leaves"],
+    "extra_markers": {
+      "minecraft:mangrove_roots": "minecraft:mangrove_roots"
+    },
+    "growable_on": ["minecraft:dirt", "minecraft:grass_block", "minecraft:mud", "minecraft:clay"],
+    "leaf_filter": [],
+    "log_filter": [],
+    "replaceable_blocks": "BLOCK",
+    "max_log_depth": 3,
+    "random_rotation": true,
+    "allow_mirroring": false
+  },
+
+  "ecology": {
+    "biomes": ["minecraft:swamp", "minecraft:mangrove_swamp"],
+    "biome_tags": [],
+    "ground_blocks": ["minecraft:dirt", "minecraft:grass_block", "minecraft:mud", "minecraft:clay"],
+    "temperature": [0.5, 0.95],
+    "moisture": [0.6, 1.0],
+    "weight": 2,
+    "rarity": "UNCOMMON",
+    "mode_weight_overrides": {
+      "abundant": 3
+    }
+  }
+}

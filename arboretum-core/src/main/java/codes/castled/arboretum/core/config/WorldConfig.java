@@ -178,11 +178,23 @@ public record WorldConfig(
         return overrides;
     }
 
-    /** @return the ids the user switched off, which the collection also declares. */
-    public Set<ArboretumId> excludedSpecies() {
-        Set<ArboretumId> all = new LinkedHashSet<>(species);
-        all.removeAll(weightOverrides.keySet());
-        return all;
+    /**
+     * The species this world generates, resolved against the installed catalogue.
+     *
+     * <p>From the frozen list, not the collection: a species a later version adds to the
+     * collection doesn't appear in an existing world, and a removed collection changes nothing.
+     * A frozen species the catalogue no longer has is left out, with a warning in the report -
+     * the world keeps generating the rest.
+     */
+    public codes.castled.arboretum.core.collection.CollectionResolver.Resolution resolve(
+            codes.castled.arboretum.core.species.SpeciesCatalogue catalogue) {
+        Map<ArboretumId, CollectionDefinition.Override> overrides = new LinkedHashMap<>();
+        weightOverrides.forEach((id, weight) -> overrides.put(id, CollectionDefinition.Override.weight(weight)));
+        CollectionDefinition frozen = new CollectionDefinition(
+                collectionId == null ? ArboretumId.arboretum("world") : collectionId,
+                "this world", "the species frozen when the world was created", false, species, overrides);
+        return codes.castled.arboretum.core.collection.CollectionResolver.resolve(
+                catalogue, frozen, generationMode, spawningRule, Set.of());
     }
 
     /**

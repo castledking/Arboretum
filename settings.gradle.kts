@@ -7,6 +7,11 @@
 //                     This is the module every platform adapter shares.
 //   :arboretum-fabric Fabric adapter. Owns worldgen registration, networking and client screens.
 pluginManagement {
+    val loom_version: String by settings
+    plugins {
+        // 26.x is unobfuscated: the non-remapping Loom plugin builds against Mojang names as-is.
+        id("net.fabricmc.fabric-loom") version loom_version
+    }
     repositories {
         gradlePluginPortal()
         mavenCentral()

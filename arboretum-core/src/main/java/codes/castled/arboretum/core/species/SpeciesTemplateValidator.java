@@ -64,6 +64,7 @@ public final class SpeciesTemplateValidator {
         }
         if (loaded.size() == (structure.hasRoots() ? 3 : 2)) {
             checkMarkers(species, loaded, report);
+            checkLeafReach(species, loaded, report);
         }
 
         // The trunk template has to contain log markers. A canopy on its own is a floating blob,
@@ -118,6 +119,37 @@ public final class SpeciesTemplateValidator {
         report.warn("structure", "no template contains the declared markers " + absent
                 + ", so they place nothing. If the templates were saved with a different block, "
                 + "update the species' marker lists to match them.");
+    }
+
+    /**
+     * Warns about leaves vanilla would let decay: farther than six blocks from a log, counted
+     * through leaves, in the tree as placed unrotated (where a leaf and a log meet, the log wins).
+     * They generate and then rot away within minutes.
+     */
+    private static void checkLeafReach(SpeciesDefinition species, List<StructureTemplate> templates,
+                                       ValidationReport report) {
+        java.util.Set<String> logMarkers = new java.util.HashSet<>(species.structure().logMarkers());
+        java.util.Set<String> leafMarkers = new java.util.HashSet<>(species.structure().leafMarkers());
+        java.util.Set<codes.castled.arboretum.core.template.BlockPos> logs = new java.util.HashSet<>();
+        java.util.Set<codes.castled.arboretum.core.template.BlockPos> leaves = new java.util.HashSet<>();
+        for (StructureTemplate template : templates) {
+            for (codes.castled.arboretum.core.template.TemplateBlock block : template.blocks()) {
+                String id = template.stateAt(block).blockId();
+                if (logMarkers.contains(id)) {
+                    logs.add(block.pos());
+                } else if (leafMarkers.contains(id)) {
+                    leaves.add(block.pos());
+                }
+            }
+        }
+        leaves.removeAll(logs);
+        long decaying = codes.castled.arboretum.core.placement.LeafReach.decaying(logs, leaves);
+        if (decaying > 0) {
+            report.warn("structure", decaying + " of " + leaves.size() + " leaves are more than "
+                    + (codes.castled.arboretum.core.placement.LeafReach.DECAY_DISTANCE - 1)
+                    + " blocks from a log, counted through leaves, so vanilla decays them minutes after "
+                    + "the tree grows. Add branches into the canopy's far edges, or trim those leaves.");
+        }
     }
 
     private static void requireSome(SpeciesDefinition species, StructureTemplate template,

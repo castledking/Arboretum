@@ -1,3 +1,14 @@
+ <p align="center">
+  <img alt="Arboretum" width="100%" src="https://castled.codes/assets/arboretum-banner.png?v=2">
+</p>
+
+<p align="center">
+  <a href="https://discord.com/invite/pCKdCX6nYr"><img alt="Discord" src="https://img.shields.io/badge/Discord-Community-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+  <a href="https://github.com/castledking/Arboretum"><img alt="GitHub Repository" src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github"></a>
+  <a href="https://github.com/castledking/Arboretum/issues"><img alt="GitHub Issues" src="https://img.shields.io/badge/GitHub-Issues-181717?style=for-the-badge&logo=github"></a>
+  <a href="https://castled.codes"><img alt="CASTLED CODEX" src="https://castled.codes/assets/logo-banner.png" width="140" height="35"></a>
+</p>
+
 **Arboretum** is a botanical expansion for Minecraft, bringing the diversity of real-world trees into the Overworld through distinctive bark, foliage, and carefully curated species.
 
 From towering African baobabs to flowering jacarandas and pale-barked bald cypress, Arboretum draws inspiration from the trees that define landscapes around the world. Each species is an opportunity to discover something new about the natural world.
@@ -24,12 +35,12 @@ Arboretum explores that gap by reimagining familiar Minecraft tree assets as dis
 
 Each tree starts with a real-world reference. Its visual identity should reflect what makes that species recognizable, rather than simply applying a different color to an existing tree.
 
-| Species                             | Inspiration                    | Visual identity                              |
-| ----------------------------------- | ------------------------------ | -------------------------------------------- |
-| Baobab (_Adansonia_)                | African savannas               | Massive trunks and broad, irregular canopies |
-| Jacaranda (_Jacaranda mimosifolia_) | South American flowering trees | Dark wood and purple-blue blossoms           |
-| Bald cypress (_Taxodium distichum_) | North American wetlands        | Pale, textured bark and distinctive roots    |
-| More species                        | Worldwide                      | A growing botanical catalogue                |
+| Species | Inspiration | Visual identity |
+|---|---|---|
+| Baobab (*Adansonia*) | African savannas | Massive trunks and broad, irregular canopies |
+| Jacaranda (*Jacaranda mimosifolia*) | South American flowering trees | Dark wood and purple-blue blossoms |
+| Bald cypress (*Taxodium distichum*) | North American wetlands | Pale, textured bark and distinctive roots |
+| More species | Worldwide | A growing botanical catalogue |
 
 The initial species are a starting point, not a limit. The catalogue is intended to grow as additional trees are researched, designed, and implemented.
 
@@ -55,18 +66,18 @@ Scientific names and biological details should be grounded in reliable botanical
 
 Not every world needs every species. Arboretum is designed around selectable collections, allowing players and server owners to decide how much variety they want.
 
-| Preset       | Purpose                                           |
-| ------------ | ------------------------------------------------- |
-| **Small**    | A lightweight selection of distinctive species    |
-| **Medium**   | A broader collection for greater visual diversity |
-| **Complete** | Every available species in the catalogue          |
-| **Custom**   | Individually selected species and collections     |
+| Preset | Purpose |
+|---|---|
+| **Small** | A lightweight selection of distinctive species |
+| **Medium** | A broader collection for greater visual diversity |
+| **Complete** | Every available species in the catalogue |
+| **Custom** | Individually selected species and collections |
 
 Presets are intended to be curated configurations of the same underlying species catalogue, rather than separate implementations of the same content.
 
 This keeps collection definitions manageable as the project grows and makes custom combinations possible without maintaining a separate pack for every selection.
 
-_Collection presets and custom selection are planned features._
+*Collection presets and custom selection are planned features.*
 
 ---
 

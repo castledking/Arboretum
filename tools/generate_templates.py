@@ -133,7 +133,8 @@ class Template:
 def _blob(radius, y_offset, jitter, rng, taper=1.0):
     """A roughly ellipsoidal set of (x, y, z) offsets, for canopies."""
     points = []
-    steps = 2.0
+    # One-block steps: a two-block lattice left every leaf unconnected, so canopies decayed.
+    steps = 1.0
     x = -radius
     while x <= radius:
         y = -radius
@@ -344,6 +345,42 @@ BUILDERS = {
 }
 
 
+DECAY_DISTANCE = 7
+
+
+def prune_decaying(templates, log, leaf):
+    """Drops every leaf vanilla would let decay: farther than 6 blocks from a log through leaves.
+
+    Run over the species' templates together, as they are placed - where a canopy leaf and a
+    trunk log share a position the log wins, as in the planner. Without this a generated canopy
+    rots away within minutes of the tree growing.
+    """
+    def name(template, block):
+        return template["palette"][block["state"]]["Name"]
+
+    logs = {tuple(b["pos"]) for t in templates for b in t["blocks"] if name(t, b) == log}
+    leaves = {tuple(b["pos"]) for t in templates for b in t["blocks"] if name(t, b) == leaf} - logs
+    distance = {pos: 0 for pos in logs}
+    frontier = list(logs)
+    while frontier:
+        nxt = []
+        for (x, y, z) in frontier:
+            d = distance[(x, y, z)] + 1
+            if d >= DECAY_DISTANCE:
+                continue
+            for n in ((x + 1, y, z), (x - 1, y, z), (x, y + 1, z), (x, y - 1, z), (x, y, z + 1), (x, y, z - 1)):
+                if n in leaves and n not in distance:
+                    distance[n] = d
+                    nxt.append(n)
+        frontier = nxt
+    pruned = 0
+    for t in templates:
+        kept = [b for b in t["blocks"] if name(t, b) != leaf or tuple(b["pos"]) in distance]
+        pruned += len(t["blocks"]) - len(kept)
+        t["blocks"] = kept
+    return pruned
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default="arboretum-core/src/main/resources/data/arboretum/templates",
@@ -359,6 +396,10 @@ def main():
     for name in args.species:
         rng = random.Random(args.seed + sum(ord(c) for c in name))
         built = BUILDERS[name](rng)
+        log, leaf, _ = SPECIES_BLOCKS[name]
+        pruned = prune_decaying(list(built), log, leaf)
+        if pruned:
+            print("%s: pruned %d leaves that would decay" % (name, pruned))
         directory = os.path.join(args.out, name)
         os.makedirs(directory, exist_ok=True)
         parts = list(zip(("trunk", "canopy", "roots"), built))

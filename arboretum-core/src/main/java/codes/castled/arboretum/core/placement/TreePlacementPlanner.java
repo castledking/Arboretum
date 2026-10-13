@@ -125,6 +125,17 @@ public final class TreePlacementPlanner {
         return species;
     }
 
+    /**
+     * The blocks a trunk of this species may root in, for {@link PlacementContext#groundBlocks()}.
+     *
+     * <p>{@code structure.growable_on} is the placement rule; {@code ecology.ground_blocks} is what
+     * the spawn surface must be. A species that states only the latter roots in the same blocks.
+     */
+    public static Set<String> groundFor(SpeciesDefinition species) {
+        Set<String> growable = species.structure().groundFilter();
+        return growable.isEmpty() ? species.ecology().groundBlocks() : growable;
+    }
+
     /** @return the marker block ids this species declares, for template validation. */
     public Set<String> markers() {
         return markerKinds.keySet();
@@ -186,10 +197,33 @@ public final class TreePlacementPlanner {
             }
         }
 
-        // --- 4. Obstruction, protection and overlap ---------------------------------------------
+        // --- 4. Overlap: one block per position --------------------------------------------------
+        // Trunk, canopy and roots are authored separately and meet: the canopy is built around the
+        // top of the trunk, the roots around its base. Where they meet the stronger part keeps the
+        // position, as in vanilla trees - a trunk runs up through its own leaves. Two blocks of the
+        // same kind that disagree are still an authoring error.
+        Map<BlockPos, PlacedBlock> chosen = new LinkedHashMap<>();
+        for (PlacedBlock block : candidates) {
+            PlacedBlock previous = chosen.get(block.pos);
+            if (previous == null) {
+                chosen.put(block.pos, block);
+            } else if (!previous.state.equals(block.state)) {
+                int order = Integer.compare(precedence(block.kind), precedence(previous.kind));
+                if (order == 0) {
+                    return new PlacementPlan.Refused(id, PlacementPlan.Reason.OBSTRUCTED,
+                            "trunk, canopy and roots templates overlap at " + block.pos + " ("
+                                    + previous.state + " vs " + block.state + ")");
+                }
+                if (order > 0) {
+                    chosen.put(block.pos, block);
+                }
+            }
+        }
+
+        // --- 5. Obstruction and protection -------------------------------------------------------
         Map<BlockPos, BlockStateRef> placements = new LinkedHashMap<>();
         Map<PlacementOrder.Kind, List<BlockPos>> byKind = new EnumMap<>(PlacementOrder.Kind.class);
-        for (PlacedBlock block : candidates) {
+        for (PlacedBlock block : chosen.values()) {
             BlockQuery.WorldBlock existing = query.blockAt(block.pos);
             if (existing.occupancy().isUnknown()) {
                 // A neighbouring chunk is not generated. Growing across the border here produces a
@@ -206,18 +240,11 @@ public final class TreePlacementPlanner {
                         "cannot place " + block.state + " at " + block.pos + " over "
                                 + existing.blockId());
             }
-            // Two template blocks mapping to one position means the templates overlap. Last writer
-            // wins would be arbitrary, so say so instead.
-            BlockStateRef previous = placements.put(block.pos, block.state);
-            if (previous != null && !previous.equals(block.state)) {
-                return new PlacementPlan.Refused(id, PlacementPlan.Reason.OBSTRUCTED,
-                        "trunk, canopy and roots templates overlap at " + block.pos + " ("
-                                + previous + " vs " + block.state + ")");
-            }
+            placements.put(block.pos, block.state);
             byKind.computeIfAbsent(block.kind, key -> new ArrayList<>()).add(block.pos);
         }
 
-        // --- 5. Ground ------------------------------------------------------------------------
+        // --- 6. Ground ------------------------------------------------------------------------
         List<BlockPos> feet = new ArrayList<>(byKind.getOrDefault(PlacementOrder.Kind.ROOT, List.of()));
         feet.addAll(byKind.getOrDefault(PlacementOrder.Kind.LOG, List.of()));
         List<BlockPos> supportedFeet = new ArrayList<>();
@@ -234,7 +261,7 @@ public final class TreePlacementPlanner {
                             + " within " + maxDepth + " block(s) below it");
         }
 
-        // --- 6. Order and describe ---------------------------------------------------------------
+        // --- 7. Order and describe ---------------------------------------------------------------
         List<BlockPos> ordered = orderPlacements(byKind);
         BlockPos.Bounds footprint = BlockPos.boundsOf(
                 ordered.stream().map(pos -> new BlockPos(pos.x(), 0, pos.z())).toList());
@@ -247,6 +274,17 @@ public final class TreePlacementPlanner {
         }
 
         return new PlacementPlan.Placed(id, orderedPlacements, supportedFeet, footprint, maxY - minY + 1);
+    }
+
+    /** Which part keeps a position two templates both fill: log, branch, root, decoration, leaf. */
+    private static int precedence(PlacementOrder.Kind kind) {
+        return switch (kind) {
+            case LOG -> 4;
+            case BRANCH -> 3;
+            case ROOT -> 2;
+            case DECORATION -> 1;
+            case LEAF -> 0;
+        };
     }
 
     /**

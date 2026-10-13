@@ -31,6 +31,34 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+// --- the bundled data index ---------------------------------------------------------------
+// A jar cannot list a directory, so every platform finds the bundled species, collections and
+// templates through data/arboretum/index.json, written here from what src/main/resources holds.
+// Adding a species is dropping its files in; nothing has to be registered by hand.
+val bundledData = layout.projectDirectory.dir("src/main/resources/data/arboretum")
+val indexDir = layout.buildDirectory.dir("generated/arboretum-index")
+val writeDataIndex by tasks.registering {
+    description = "Writes data/arboretum/index.json from the bundled species, collections and templates"
+    inputs.dir(bundledData)
+    outputs.dir(indexDir)
+    doLast {
+        val root = bundledData.asFile
+        fun list(sub: String, ext: String) = root.resolve(sub).walkTopDown()
+            .filter { it.isFile && it.name.endsWith(ext) }
+            .map { "data/arboretum/" + it.relativeTo(root).invariantSeparatorsPath }
+            .sorted().toList()
+        fun array(items: List<String>) = items.joinToString(",\n    ", "[\n    ", "\n  ]") { "\"" + it + "\"" }
+        val out = indexDir.get().file("data/arboretum/index.json").asFile
+        out.parentFile.mkdirs()
+        out.writeText("{\n  \"species\": " + array(list("species", ".json"))
+            + ",\n  \"collections\": " + array(list("collections", ".json"))
+            + ",\n  \"templates\": " + array(list("templates", ".nbt")) + "\n}\n")
+    }
+}
+sourceSets.main {
+    resources.srcDir(writeDataIndex)
+}
+
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
     options.release = core_java_version.toInt()

@@ -49,15 +49,21 @@ public final class SpeciesTemplateValidator {
         }
 
         if (trunk != null) {
-            checkMarkers(species, trunk, "structure.trunk_template", report);
             requireSome(species, trunk, "structure.trunk_template", report);
         }
         if (canopy != null) {
-            checkMarkers(species, canopy, "structure.canopy_template", report);
             requireSome(species, canopy, "structure.canopy_template", report);
         }
-        if (roots != null) {
-            checkMarkers(species, roots, "structure.roots_template", report);
+        // A marker belongs to one part - logs to the trunk, leaves to the canopy - so it is only
+        // missing when none of the species' templates has it.
+        List<StructureTemplate> loaded = new ArrayList<>();
+        for (StructureTemplate template : new StructureTemplate[] {trunk, canopy, roots}) {
+            if (template != null) {
+                loaded.add(template);
+            }
+        }
+        if (loaded.size() == (structure.hasRoots() ? 3 : 2)) {
+            checkMarkers(species, loaded, report);
         }
 
         // The trunk template has to contain log markers. A canopy on its own is a floating blob,
@@ -94,20 +100,24 @@ public final class SpeciesTemplateValidator {
         }
     }
 
-    private static void checkMarkers(SpeciesDefinition species, StructureTemplate template,
-                                     String field, ValidationReport report) {
+    private static void checkMarkers(SpeciesDefinition species, List<StructureTemplate> templates,
+                                     ValidationReport report) {
         List<String> absent = new ArrayList<>();
         for (String marker : markersOf(species)) {
-            if (countMarkers(species, template, List.of(marker)) == 0) {
+            long found = 0;
+            for (StructureTemplate template : templates) {
+                found += countMarkers(species, template, List.of(marker));
+            }
+            if (found == 0) {
                 absent.add(marker);
             }
         }
         if (absent.isEmpty()) {
             return;
         }
-        report.warn(field, "template '" + template + "' contains none of the declared markers "
-                + absent + ". Those positions will be skipped. If the template was saved with a "
-                + "different block, update the species' marker lists to match it.");
+        report.warn("structure", "no template contains the declared markers " + absent
+                + ", so they place nothing. If the templates were saved with a different block, "
+                + "update the species' marker lists to match them.");
     }
 
     private static void requireSome(SpeciesDefinition species, StructureTemplate template,

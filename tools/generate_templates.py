@@ -346,7 +346,7 @@ BUILDERS = {
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", default="arboretum-fabric/src/main/resources/data/arboretum/templates",
+    parser.add_argument("--out", default="arboretum-core/src/main/resources/data/arboretum/templates",
                         help="output directory for the .nbt templates")
     parser.add_argument("--species", nargs="+", default=sorted(BUILDERS),
                         help="which species to generate")

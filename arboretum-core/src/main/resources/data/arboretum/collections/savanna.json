@@ -5,8 +5,7 @@
   "description": "Species of hot, seasonally dry country. Thematic collection; useful on its own or added to a custom set.",
   "built_in": true,
   "species": [
-    "arboretum:baobab",
-    "arboretum:italian_cypress"
+    "arboretum:baobab"
   ],
   "overrides": {
     "arboretum:baobab": {

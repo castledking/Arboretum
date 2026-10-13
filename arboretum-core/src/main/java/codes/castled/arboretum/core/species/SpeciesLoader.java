@@ -65,6 +65,11 @@ public final class SpeciesLoader {
      * @return the definition, or null when the report contains errors
      */
     public static SpeciesDefinition load(String source, JsonObject json) {
+        return read(source, json).value();
+    }
+
+    /** As {@link #load}, keeping the report that explains a rejection. */
+    public static codes.castled.arboretum.core.data.Loaded<SpeciesDefinition> read(String source, JsonObject json) {
         ValidationReport report = new ValidationReport(source);
         DataReader reader = new DataReader(json, "$", report);
         reader.warnUnknown(ROOT_FIELDS);
@@ -86,9 +91,10 @@ public final class SpeciesLoader {
         SpeciesDefinition.Ecology ecology = readEcology(reader, report);
 
         if (report.hasErrors()) {
-            return null;
+            return new codes.castled.arboretum.core.data.Loaded<>(null, report);
         }
-        return new SpeciesDefinition(id, schema, botany, visuals, structure, ecology);
+        return new codes.castled.arboretum.core.data.Loaded<>(
+                new SpeciesDefinition(id, schema, botany, visuals, structure, ecology), report);
     }
 
     private static ArboretumId readId(String source, JsonObject json, ValidationReport report) {

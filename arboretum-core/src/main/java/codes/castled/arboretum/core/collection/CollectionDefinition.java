@@ -91,6 +91,12 @@ public record CollectionDefinition(
      * @return the definition, or null when the report has errors
      */
     public static CollectionDefinition load(String source, com.google.gson.JsonObject json) {
+        return read(source, json).value();
+    }
+
+    /** As {@link #load}, keeping the report that explains a rejection. */
+    public static codes.castled.arboretum.core.data.Loaded<CollectionDefinition> read(
+            String source, com.google.gson.JsonObject json) {
         ValidationReport report = new ValidationReport(source);
         DataReader reader = new DataReader(json, "$", report);
         reader.warnUnknown(Set.of("id", "schema", "display_name", "description", "built_in",
@@ -154,15 +160,17 @@ public record CollectionDefinition(
             }
         }
 
+        // Read before the error check: a missing name is an error like any other.
+        String displayName = reader.requireString("display_name");
         if (report.hasErrors()) {
-            return null;
+            return new codes.castled.arboretum.core.data.Loaded<>(null, report);
         }
-        return new CollectionDefinition(
+        return new codes.castled.arboretum.core.data.Loaded<>(new CollectionDefinition(
                 id,
-                reader.requireString("display_name"),
+                displayName,
                 reader.optionalString("description", ""),
                 reader.optionalBoolean("built_in", false),
                 species,
-                overrides);
+                overrides), report);
     }
 }

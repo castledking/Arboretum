@@ -2,13 +2,11 @@
   "id": "arboretum:medium",
   "schema": 1,
   "display_name": "Medium",
-  "description": "Every shipped species, across broadleaf, conifer and wetland forms. The recommended default for most players.",
+  "description": "Every finished species. The recommended default for most players. Bald cypress and Italian cypress join when their structures are done.",
   "built_in": true,
   "species": [
     "arboretum:baobab",
-    "arboretum:jacaranda",
-    "arboretum:bald_cypress",
-    "arboretum:italian_cypress"
+    "arboretum:jacaranda"
   ],
   "overrides": {}
 }

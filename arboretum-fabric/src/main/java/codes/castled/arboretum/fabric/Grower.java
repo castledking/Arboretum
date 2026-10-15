@@ -8,7 +8,7 @@ import codes.castled.arboretum.core.placement.TreePlacementPlanner;
 import codes.castled.arboretum.core.species.SpeciesDefinition;
 import codes.castled.arboretum.core.template.BlockStateRef;
 import codes.castled.arboretum.core.template.Rotation;
-import codes.castled.arboretum.core.template.StructureTemplate;
+import codes.castled.arboretum.core.placement.TreeTemplates;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -46,12 +46,9 @@ final class Grower {
     static <L extends LevelWriter & LevelHeightAccessor> Result grow(
             L level, BlockQuery query, BundledData bundle, SpeciesDefinition species, BlockPos origin,
             Rotation rotation, RandomSource random) {
-        SpeciesDefinition.Structure structure = species.structure();
-        StructureTemplate trunk = bundle.templates().load(structure.trunkTemplate()).orElse(null);
-        StructureTemplate canopy = bundle.templates().load(structure.canopyTemplate()).orElse(null);
-        StructureTemplate roots = structure.hasRoots()
-                ? bundle.templates().load(structure.rootsTemplate()).orElse(null) : null;
-        if (trunk == null || canopy == null || (structure.hasRoots() && roots == null)) {
+        // One of the species' whole trees by weight, or its trunk/canopy/roots parts.
+        TreeTemplates.Chosen chosen = TreeTemplates.choose(species, bundle.templates(), random.nextLong());
+        if (chosen == null) {
             // Validated at startup, so this means the bundle changed underneath a running server.
             return new Result(null, "TEMPLATE_MISSING");
         }
@@ -59,7 +56,8 @@ final class Grower {
                 new codes.castled.arboretum.core.template.BlockPos(origin.getX(), origin.getY(), origin.getZ()),
                 rotation, random.nextLong(), level.getMinY(), level.getMaxY(),
                 TreePlacementPlanner.groundFor(species));
-        PlacementPlan plan = new TreePlacementPlanner(species).plan(context, trunk, canopy, roots, query);
+        PlacementPlan plan = new TreePlacementPlanner(species).plan(context, chosen.trunk(), chosen.canopy(),
+                chosen.roots(), query);
         if (plan.refused().isPresent()) {
             return new Result(null, plan.refused().get().reason().name());
         }

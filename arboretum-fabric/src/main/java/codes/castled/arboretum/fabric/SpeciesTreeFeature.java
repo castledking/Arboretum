@@ -43,9 +43,11 @@ record SpeciesTreeFeature(String species) implements Feature {
         if (resolved == null || random.nextFloat() >= GenerationDensity.chancePerChunk(resolved.weight())) {
             return false;
         }
+        codes.castled.arboretum.core.template.Rotation rotation = Grower.randomRotation(resolved.definition(), random);
+        state.recordAttempt(resolved.definition().id().path() + "@" + origin.getX() + "," + origin.getY() + ","
+                + origin.getZ() + "/" + rotation.name());
         Grower.Result result = Grower.grow(level, new RegionBlockQuery(level, origin, WRITE_REACH),
-                ArboretumFabric.bundle(), resolved.definition(), origin,
-                Grower.randomRotation(resolved.definition(), random), random);
+                ArboretumFabric.bundle(), resolved.definition(), origin, rotation, random);
         if (result.grown()) {
             state.placed.add(result.tree());
             return true;

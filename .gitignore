@@ -16,3 +16,7 @@ session.md
 
 # Scratch left at the root
 /Debug.java
+
+# Python
+__pycache__/
+*.pyc

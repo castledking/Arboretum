@@ -50,6 +50,7 @@ public final class ArboretumFabric implements ModInitializer {
             LOG.warn("{}", problems);
         }
 
+        ArboretumBlocks.register();
         Registry.register(BuiltInRegistries.FEATURE_TYPE, Identifier.fromNamespaceAndPath(MOD_ID, "species_tree"),
                 SpeciesTreeFeature.CODEC);
         for (String name : List.of("baobab", "jacaranda")) {

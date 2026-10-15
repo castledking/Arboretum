@@ -9,7 +9,8 @@
 #   3. one baobab is grown in each rotation with /arboretum place (the same path);
 #   4. random ticks are sped up, so leaves with a wrong distance would decay, then
 #      /arboretum verify checks every recorded tree's blocks against the world;
-#   5. restart: the config must be read, not recreated, and every tree verified again.
+#   5. restart: the config must be read, not recreated, and every tree verified again;
+#   6. a fresh world from the same seed must try to grow the same trees.
 #
 # The server (launcher, libraries, Fabric API) is cached in ~/.cache/arboretum/fabric-26.3;
 # each run starts from a fresh world. KEEP=1 keeps the world. Needs java 25, curl, python3.
@@ -82,6 +83,12 @@ stop() {
 wait_for() {  # wait_for <regex> <seconds> [from-line]
     local deadline=$((SECONDS + $2))
     until tail -n "+${3:-1}" "$log" | grep -qE "$1"; do
+        if grep -q 'at knot//codes\.castled\.' "$log"; then
+            # An exception through Arboretum's code: stop here rather than wait out every step.
+            echo "FAIL: an exception passed through Arboretum:" >&2
+            grep -m1 -B3 -A12 'at knot//codes\.castled\.' "$log" >&2
+            exit 1
+        fi
         if ! kill -0 "$server" 2>/dev/null || (( SECONDS > deadline )); then return 1; fi
         sleep 1
     done
@@ -123,18 +130,27 @@ grow_savanna() {
 }
 grow_savanna
 echo "  natural: ${grown#*: }"
-natural1=$(run "arboretum list" "Arboretum trees:")
+natural1=$(run "arboretum attempts" "Arboretum attempts:")
 echo "$grown" | grep -q "arboretum:baobab" || problems+=("world generation grew no baobab")
 echo "$grown" | grep -q "arboretum:jacaranda" || problems+=("world generation grew no jacaranda")
 
 # One baobab per rotation, each on its own grass pad high above the terrain, through the same
 # grower world generation uses.
-for r in 0 1 2 3; do
-    x=$((sx - 90 + 45 * r)); z=$((sz - 60))
-    run "fill $((x - 12)) 149 $((z - 12)) $((x + 12)) 149 $((z + 12)) grass_block" "filled|Successfully" > /dev/null
-    out=$(run "execute positioned $x 150 $z run arboretum place baobab $r" "Arboretum placed|refused at") || true
-    echo "  rotation $r: ${out##*: }"
-    echo "$out" | grep -q "Arboretum placed" || problems+=("rotation $r was not placed: ${out##*: }")
+for species in baobab jacaranda; do
+    for r in 0 1 2 3; do
+        x=$((sx - 90 + 45 * r)); z=$((sz - 60)); [ "$species" = jacaranda ] && z=$((sz - 15))
+        run "fill $((x - 12)) 149 $((z - 12)) $((x + 12)) 149 $((z + 12)) grass_block" "filled|Successfully" > /dev/null
+        out=$(run "execute positioned $x 150 $z run arboretum place $species $r" "Arboretum placed|refused at") || true
+        echo "  $species rotation $r: ${out##*: }"
+        echo "$out" | grep -q "Arboretum placed" || problems+=("$species rotation $r was not placed: ${out##*: }")
+    done
+done
+# The trees are Arboretum's own blocks, not the acacia and dark oak they were built from: the
+# trunk base of the first placed jacaranda and baobab.
+for check in "jacaranda $((sx - 90)) $((sz - 15)) arboretum:jacaranda_wood" "baobab $((sx - 90)) $((sz - 60)) arboretum:baobab_log"; do
+    read -r name bx bz id <<< "$check"
+    found=$(run "execute if block $bx 150 $bz $id run say ARBORETUM_BLOCK_OK_$name" "ARBORETUM_BLOCK_OK_$name|Test failed") || true
+    echo "$found" | grep -q "ARBORETUM_BLOCK_OK_$name" || problems+=("the $name trunk at $bx 150 $bz is not $id")
 done
 stats=$(run "arboretum stats" "Arboretum: grown")
 echo "  ${stats#*: }"
@@ -163,11 +179,13 @@ echo "== run 3: a fresh world from the same seed"
 rm -rf "$world"
 start
 grow_savanna
-natural3=$(run "arboretum list" "Arboretum trees:")
+natural3=$(run "arboretum attempts" "Arboretum attempts:")
 stop
-echo "  run 1: ${natural1#*trees: }"
-echo "  run 3: ${natural3#*trees: }"
-[ "${natural1#*trees: }" = "${natural3#*trees: }" ] || problems+=("the same seed grew different trees")
+# The same seed must try the same trees. Whether one at a chunk border grows can depend on the
+# order chunks generate in - a neighbour's tree may already stand there - as for vanilla trees.
+echo "  run 1 tried: ${natural1#*attempts: }"
+echo "  run 3 tried: ${natural3#*attempts: }"
+[ "${natural1#*attempts: }" = "${natural3#*attempts: }" ] || problems+=("the same seed tried different trees")
 
 grep -nE "ERROR|Exception" "$log" | grep -iE "arboretum|codes\.castled" | head -5 | sed 's/^/  /' || true
 grep -qiE "(ERROR|Exception).*(arboretum|codes\.castled)|at codes\.castled\." "$log" && problems+=("an error mentions Arboretum")

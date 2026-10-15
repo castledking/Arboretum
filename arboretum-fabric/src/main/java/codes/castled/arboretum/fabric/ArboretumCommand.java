@@ -23,7 +23,9 @@ import net.minecraft.world.level.block.state.BlockState;
  * <ul>
  *   <li>{@code stats} - the config, the species, trees grown and why others were refused;</li>
  *   <li>{@code verify} - checks every recorded tree's blocks against the world;</li>
- *   <li>{@code list} - the recorded trees, sorted, so two runs of one seed can be compared;</li>
+ *   <li>{@code list} - the recorded trees, sorted;</li>
+ *   <li>{@code attempts} - every tree world generation tried to grow, sorted, so two runs of one
+ *       seed can be compared;</li>
  *   <li>{@code place <species> <rotation>} - grows one tree where the command runs, through the
  *       same path natural generation takes (no chance roll).</li>
  * </ul>
@@ -42,6 +44,7 @@ final class ArboretumCommand {
                 .then(Commands.literal("stats").executes(ArboretumCommand::stats))
                 .then(Commands.literal("verify").executes(ArboretumCommand::verify))
                 .then(Commands.literal("list").executes(ArboretumCommand::list))
+                .then(Commands.literal("attempts").executes(ArboretumCommand::attempts))
                 .then(Commands.literal("place")
                         .then(Commands.argument("species", StringArgumentType.word())
                                 .then(Commands.argument("rotation", IntegerArgumentType.integer(0, 3))
@@ -111,6 +114,18 @@ final class ArboretumCommand {
         java.util.Collections.sort(trees);
         reply(context, "Arboretum trees: " + String.join(" ", trees));
         return trees.size();
+    }
+
+    /** Every tree world generation tried to grow, grown or refused, sorted. */
+    private static int attempts(CommandContext<CommandSourceStack> context) {
+        WorldState state = WorldState.current();
+        if (state == null) {
+            return fail(context, "no Arboretum world is loaded");
+        }
+        java.util.List<String> attempts = new java.util.ArrayList<>(state.attempts);
+        java.util.Collections.sort(attempts);
+        reply(context, "Arboretum attempts: " + String.join(" ", attempts));
+        return attempts.size();
     }
 
     private static int place(CommandContext<CommandSourceStack> context) {

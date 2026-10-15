@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "arboretum:baobab_log",
+    "arboretum:baobab_wood",
+    "arboretum:jacaranda_log",
+    "arboretum:jacaranda_wood"
+  ]
+}

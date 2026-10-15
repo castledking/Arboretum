@@ -38,6 +38,14 @@ final class WorldState {
     final CollectionResolver.Resolution resolution;
     final PlacedTrees placed;
     final Map<String, AtomicInteger> refusals = new ConcurrentHashMap<>();
+    /**
+     * Every tree world generation tried to grow (species@x,y,z/rotation), grown or refused. The
+     * same seed must make the same attempts whatever order chunks generate in; whether an attempt
+     * at a chunk border grows can depend on that order - a neighbour's tree may already stand
+     * there - as it does for vanilla trees. Bounded, for diagnostics.
+     */
+    final java.util.Set<String> attempts = ConcurrentHashMap.newKeySet();
+    static final int ATTEMPT_CAPACITY = 1024;
 
     private WorldState(WorldConfig config, CollectionResolver.Resolution resolution, PlacedTrees placed) {
         this.config = config;
@@ -87,6 +95,12 @@ final class WorldState {
         WorldState state = new WorldState(config, resolution, PlacedTrees.load(root));
         current = state;
         return state;
+    }
+
+    void recordAttempt(String attempt) {
+        if (attempts.size() < ATTEMPT_CAPACITY) {
+            attempts.add(attempt);
+        }
     }
 
     void countRefusal(String reason) {

@@ -42,7 +42,7 @@ public final class SpeciesLoader {
             "root_block", "assets");
 
     private static final Set<String> STRUCTURE_FIELDS = Set.of(
-            "trunk_template", "canopy_template", "roots_template", "log_markers", "leaf_markers",
+            "templates", "trunk_template", "canopy_template", "roots_template", "log_markers", "leaf_markers",
             "extra_markers", "growable_on", "leaf_filter", "log_filter", "replaceable_blocks",
             "max_log_depth", "random_rotation", "allow_mirroring");
 
@@ -235,18 +235,43 @@ public final class SpeciesLoader {
         }
         structure.warnUnknown(STRUCTURE_FIELDS);
 
-        String trunk = structure.requireString("trunk_template");
-        String canopy = structure.requireString("canopy_template");
-        requireTemplatePath(trunk, "$.structure.trunk_template", report);
-        requireTemplatePath(canopy, "$.structure.canopy_template", report);
-
+        // Either whole trees (templates) or parts (trunk, optional canopy and roots) - not both.
+        List<SpeciesDefinition.Variant> templates = readVariants(structure, report);
+        String trunk = structure.optionalString("trunk_template", null);
+        String canopy = structure.optionalString("canopy_template", null);
         String roots = structure.optionalString("roots_template", null);
+        if (templates.isEmpty() && trunk == null) {
+            report.error("$.structure", "needs 'templates' (a list of whole-tree templates) or "
+                    + "'trunk_template' (with optional canopy and roots templates).");
+        }
+        if (!templates.isEmpty() && (trunk != null || canopy != null || roots != null)) {
+            report.error("$.structure", "has both 'templates' and trunk/canopy/roots templates. Use "
+                    + "one or the other: whole trees, or parts.");
+        }
+        if (trunk != null) {
+            requireTemplatePath(trunk, "$.structure.trunk_template", report);
+        }
+        if (canopy != null) {
+            requireTemplatePath(canopy, "$.structure.canopy_template", report);
+        }
         if (roots != null) {
             requireTemplatePath(roots, "$.structure.roots_template", report);
         }
 
-        List<String> logMarkers = structure.optionalStringList("log_markers");
-        List<String> leafMarkers = structure.optionalStringList("leaf_markers");
+        // Markers as a list (each stays itself) or a map (marker -> the block it becomes).
+        Map<String, String> logMap = structure.optionalMarkerMap("log_markers");
+        Map<String, String> leafMap = structure.optionalMarkerMap("leaf_markers");
+        List<String> logMarkers = new java.util.ArrayList<>(logMap.keySet());
+        List<String> leafMarkers = new java.util.ArrayList<>(leafMap.keySet());
+        Map<String, String> markerBlocks = new java.util.LinkedHashMap<>();
+        for (Map<String, String> markers : List.of(logMap, leafMap)) {
+            markers.forEach((marker, block) -> {
+                requireBlockId(block, "$.structure." + (markers == logMap ? "log" : "leaf") + "_markers." + marker, report);
+                if (!block.equals(marker)) {
+                    markerBlocks.put(marker, block);
+                }
+            });
+        }
         if (logMarkers.isEmpty()) {
             report.error("$.structure.log_markers", "at least one marker is required, otherwise the "
                     + "trunk template has no blocks to replace.");
@@ -319,7 +344,45 @@ public final class SpeciesLoader {
                         SpeciesDefinition.ReplaceableBlocks.BLOCK, "BLOCK", "PASSTHROUGH", "PIERCE"),
                 maxLogDepth,
                 structure.optionalBoolean("random_rotation", true),
-                structure.optionalBoolean("allow_mirroring", false));
+                structure.optionalBoolean("allow_mirroring", false),
+                templates,
+                markerBlocks);
+    }
+
+    /** Reads {@code templates}: each entry a path, or {@code {"path": ..., "weight": n}}. */
+    private static List<SpeciesDefinition.Variant> readVariants(DataReader structure, ValidationReport report) {
+        com.google.gson.JsonArray array = structure.optionalArray("templates");
+        List<SpeciesDefinition.Variant> variants = new java.util.ArrayList<>();
+        if (array == null) {
+            return variants;
+        }
+        for (int i = 0; i < array.size(); i++) {
+            String field = "$.structure.templates[" + i + "]";
+            com.google.gson.JsonElement entry = array.get(i);
+            String path = null;
+            int weight = 1;
+            if (entry.isJsonPrimitive() && entry.getAsJsonPrimitive().isString()) {
+                path = entry.getAsString();
+            } else if (entry.isJsonObject()) {
+                DataReader variant = new DataReader(entry.getAsJsonObject(), field, report);
+                variant.warnUnknown(Set.of("path", "weight"));
+                path = variant.requireString("path");
+                weight = variant.optionalInt("weight", 1);
+                if (weight < 1) {
+                    report.error(field + ".weight", "must be at least 1, was " + weight + ".");
+                }
+            } else {
+                report.error(field, "expected a template path or {\"path\": ..., \"weight\": n}.");
+            }
+            if (path != null) {
+                requireTemplatePath(path, field, report);
+                variants.add(new SpeciesDefinition.Variant(path, Math.max(1, weight)));
+            }
+        }
+        if (array.isEmpty()) {
+            report.error("$.structure.templates", "is empty; list at least one whole-tree template.");
+        }
+        return variants;
     }
 
     private static SpeciesDefinition.Ecology readEcology(DataReader reader, ValidationReport report) {

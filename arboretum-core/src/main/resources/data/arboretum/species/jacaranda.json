@@ -1,7 +1,6 @@
 {
   "id": "arboretum:jacaranda",
   "schema": 1,
-
   "botany": {
     "common_name": "Jacaranda",
     "scientific_name": "Jacaranda mimosifolia",
@@ -32,24 +31,34 @@
       "native_range"
     ]
   },
-
   "visuals": {
     "carrier_block": "minecraft:acacia_log",
-    "log_block": "minecraft:acacia_log",
-    "leaf_block": "minecraft:acacia_leaves",
+    "log_block": "arboretum:jacaranda_log",
+    "leaf_block": "arboretum:jacaranda_leaves",
     "leaf_cutout": true,
     "assets": {
-      "note": "Visual adaptation: J. mimosifolia does not have purple leaves. It is flowered by violet-blue blossoms, which the game cannot render as a separate particle on a leaf block. Arboretum's resource pack therefore renders the foliage violet so the tree reads as the jacaranda players recognise. This is a deliberate visual substitution, not a botanical claim. See docs/distribution.md."
+      "note": "Built from acacia wood and leaves in a test world; the markers map them to Arboretum's jacaranda blocks. The resource-pack carrier stays acacia for pack-only play. The violet foliage is a visual adaptation: J. mimosifolia flowers violet-blue, it doesn't have violet leaves."
     }
   },
-
   "structure": {
-    "trunk_template": "data/arboretum/templates/jacaranda/trunk.nbt",
-    "canopy_template": "data/arboretum/templates/jacaranda/canopy.nbt",
-    "log_markers": ["minecraft:acacia_log"],
-    "leaf_markers": ["minecraft:acacia_leaves"],
+    "templates": [
+      "data/arboretum/templates/jacaranda/jacaranda_01.nbt",
+      "data/arboretum/templates/jacaranda/jacaranda_02.nbt",
+      "data/arboretum/templates/jacaranda/jacaranda_03.nbt",
+      "data/arboretum/templates/jacaranda/jacaranda_04.nbt"
+    ],
+    "log_markers": {
+      "minecraft:acacia_wood": "arboretum:jacaranda_wood"
+    },
+    "leaf_markers": {
+      "minecraft:acacia_leaves": "arboretum:jacaranda_leaves"
+    },
     "extra_markers": {},
-    "growable_on": ["minecraft:dirt", "minecraft:grass_block", "minecraft:coarse_dirt"],
+    "growable_on": [
+      "minecraft:dirt",
+      "minecraft:grass_block",
+      "minecraft:coarse_dirt"
+    ],
     "leaf_filter": [],
     "log_filter": [],
     "replaceable_blocks": "BLOCK",
@@ -57,7 +66,6 @@
     "random_rotation": true,
     "allow_mirroring": false
   },
-
   "ecology": {
     "biomes": [
       "minecraft:savanna",
@@ -66,9 +74,18 @@
       "minecraft:meadow"
     ],
     "biome_tags": [],
-    "ground_blocks": ["minecraft:dirt", "minecraft:grass_block"],
-    "temperature": [0.6, 1.1],
-    "moisture": [0.3, 0.9],
+    "ground_blocks": [
+      "minecraft:dirt",
+      "minecraft:grass_block"
+    ],
+    "temperature": [
+      0.6,
+      1.1
+    ],
+    "moisture": [
+      0.3,
+      0.9
+    ],
     "weight": 3,
     "rarity": "COMMON"
   }

@@ -216,6 +216,39 @@ public final class DataReader {
         return values;
     }
 
+    /**
+     * Reads markers given either as a list ({@code ["minecraft:acacia_log"]}, each kept as itself)
+     * or as a map from marker to the block it becomes ({@code {"minecraft:acacia_wood":
+     * "arboretum:jacaranda_wood"}}). Insertion order is kept.
+     */
+    public java.util.Map<String, String> optionalMarkerMap(String field) {
+        if (has(field) && root.get(field).isJsonObject()) {
+            return optionalStringMap(field);
+        }
+        java.util.Map<String, String> identity = new java.util.LinkedHashMap<>();
+        for (String marker : optionalStringList(field)) {
+            identity.put(marker, marker);
+        }
+        return identity;
+    }
+
+    /** The raw array, or null when absent; an error when present but not an array. */
+    public JsonArray optionalArray(String field) {
+        if (!has(field)) {
+            return null;
+        }
+        JsonElement element = root.get(field);
+        if (!element.isJsonArray()) {
+            report.error(path + "." + field, "expected an array but found " + describe(element) + ".");
+            return null;
+        }
+        return element.getAsJsonArray();
+    }
+
+    public String path() {
+        return path;
+    }
+
     public Set<String> optionalStringSet(String field) {
         return new LinkedHashSet<>(optionalStringList(field));
     }

@@ -100,7 +100,8 @@ public final class StructureTemplateIO {
             NbtTag.CompoundTagAccess entry =
                     new NbtTag.CompoundTagAccess(entries.get(index), message -> problems.add(
                             what + " palette entry " + index + ": " + message));
-            NbtTag nameTag = entry.get("Name");
+            // Structure blocks write Name/Properties; some schematic converters write id/properties.
+            NbtTag nameTag = entry.get("Name") != null ? entry.get("Name") : entry.get("id");
             if (nameTag == null) {
                 problems.add(what + " palette entry " + index + " is missing required tag 'Name'.");
                 continue;
@@ -111,7 +112,7 @@ public final class StructureTemplateIO {
                 continue;
             }
             Map<String, String> properties = new LinkedHashMap<>();
-            NbtTag propertiesTag = entry.get("Properties");
+            NbtTag propertiesTag = entry.get("Properties") != null ? entry.get("Properties") : entry.get("properties");
             if (propertiesTag instanceof NbtTag.CompoundTag propertiesCompound) {
                 for (var property : propertiesCompound.entries().entrySet()) {
                     if (property.getValue() instanceof NbtTag.StringTag value) {

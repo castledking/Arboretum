@@ -1,6 +1,7 @@
 package codes.castled.arboretum.core.placement;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import codes.castled.arboretum.core.bundle.BundledData;
@@ -9,19 +10,22 @@ import codes.castled.arboretum.core.species.SpeciesDefinition;
 import codes.castled.arboretum.core.template.BlockPos;
 import codes.castled.arboretum.core.template.BlockStateRef;
 import codes.castled.arboretum.core.template.Rotation;
-import codes.castled.arboretum.core.template.StructureTemplate;
 import codes.castled.arboretum.core.testing.FlatWorld;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Every shipped species, from the bundled JSON and NBT, planned into a flat world - in all four
- * rotations, and against each thing that must stop a tree.
+ * Every tree of every shipped species, from the bundled JSON and NBT, planned into a flat world -
+ * in all four rotations, and against each thing that must stop a tree.
  */
 class ShippedSpeciesPlacementTest {
 
@@ -32,10 +36,24 @@ class ShippedSpeciesPlacementTest {
         bundle = BundledData.load(ShippedSpeciesPlacementTest.class.getClassLoader());
     }
 
+    /** One case per tree: each whole-tree variant, or a parts species' one set. */
+    static Stream<Tree> trees() throws Exception {
+        load();
+        List<Tree> out = new ArrayList<>();
+        for (SpeciesDefinition species : bundle.catalogue().all()) {
+            Set<String> ground = TreePlacementPlanner.groundFor(species);
+            assertTrue(ground.contains("minecraft:grass_block"),
+                    species.id() + " can't root in grass, which the test world is made of: " + new TreeSet<>(ground));
+            for (TreeTemplates.Chosen chosen : TreeTemplates.all(species, bundle.templates())) {
+                out.add(new Tree(species, chosen));
+            }
+        }
+        return out.stream();
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void growsInEveryRotationWithTheSameBlocks(String name) {
-        Tree tree = tree(name);
+    @MethodSource("trees")
+    void growsInEveryRotationWithTheSameBlocks(Tree tree) {
         PlacementPlan.Placed unrotated = tree.place(FlatWorld.grass(), Rotation.NONE);
         Map<String, Long> axes = axisCounts(unrotated);
         for (Rotation rotation : Rotation.values()) {
@@ -43,10 +61,8 @@ class ShippedSpeciesPlacementTest {
             assertEquals(unrotated.blockCount(), placed.blockCount(), rotation + " changed the block count");
             assertTrue(placed.placements().keySet().stream().allMatch(pos -> pos.y() >= 0),
                     rotation + " put a block below the ground");
-            assertTrue(placed.placements().values().stream()
-                    .anyMatch(state -> state.blockId().equals(tree.species().visuals().logBlockId())), "no logs");
-            assertTrue(placed.placements().values().stream()
-                    .anyMatch(state -> state.blockId().equals(tree.species().visuals().leafBlockId())), "no leaves");
+            assertTrue(placed.placements().values().stream().anyMatch(s -> tree.logs().contains(s.blockId())), "no logs");
+            assertTrue(placed.placements().values().stream().anyMatch(s -> tree.leaves().contains(s.blockId())), "no leaves");
             // A quarter turn swaps the x and z log axes; a half turn keeps them.
             Map<String, Long> turned = axisCounts(placed);
             boolean quarter = rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.CLOCKWISE_270;
@@ -57,87 +73,121 @@ class ShippedSpeciesPlacementTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void theSameInputsGiveTheSamePlan(String name) {
-        Tree tree = tree(name);
+    @MethodSource("trees")
+    void theTrunkBaseLandsOnTheOrigin(Tree tree) {
+        PlacementPlan.Placed placed = tree.place(FlatWorld.grass(), Rotation.NONE);
+        int lowest = placed.placements().entrySet().stream()
+                .filter(e -> tree.logs().contains(e.getValue().blockId()))
+                .mapToInt(e -> e.getKey().y()).min().orElseThrow();
+        assertEquals(0, lowest, "the lowest logs must stand at the origin's height");
+        assertTrue(placed.placements().entrySet().stream().anyMatch(e -> e.getKey().y() == 0
+                && Math.abs(e.getKey().x()) <= 1 && Math.abs(e.getKey().z()) <= 1
+                && tree.logs().contains(e.getValue().blockId())), "no trunk log at the origin");
+    }
+
+    @ParameterizedTest
+    @MethodSource("trees")
+    void grownLeavesAreNotPersistent(Tree tree) {
+        PlacementPlan.Placed placed = tree.place(FlatWorld.grass(), Rotation.NONE);
+        for (BlockStateRef state : placed.placements().values()) {
+            assertFalse(state.hasProperty("persistent") || state.hasProperty("distance"),
+                    state + " carries a placed block's leaf state");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("trees")
+    void theSameInputsGiveTheSamePlan(Tree tree) {
         assertEquals(tree.place(FlatWorld.grass(), Rotation.CLOCKWISE_90).placements(),
                 tree.place(FlatWorld.grass(), Rotation.CLOCKWISE_90).placements());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void noGroundItCanRootInMeansNoTree(String name) {
+    @MethodSource("trees")
+    void noGroundItCanRootInMeansNoTree(Tree tree) {
         // Sand: no shipped species roots in it (the Italian cypress does root in stone).
-        assertRefused(tree(name).plan(new FlatWorld("minecraft:sand", 64), Rotation.NONE, 320),
-                PlacementPlan.Reason.NO_GROUND);
+        assertRefused(tree.plan(new FlatWorld("minecraft:sand", 64), Rotation.NONE, 320), PlacementPlan.Reason.NO_GROUND);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void aTreeTallerThanTheWorldIsRefused(String name) {
-        assertRefused(tree(name).plan(FlatWorld.grass(), Rotation.NONE, 4), PlacementPlan.Reason.WORLD_HEIGHT);
+    @MethodSource("trees")
+    void aTreeTallerThanTheWorldIsRefused(Tree tree) {
+        assertRefused(tree.plan(FlatWorld.grass(), Rotation.NONE, 4), PlacementPlan.Reason.WORLD_HEIGHT);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void bedrockInTheWayIsNeverReplaced(String name) {
-        Tree tree = tree(name);
+    @MethodSource("trees")
+    void bedrockInTheWayIsNeverReplaced(Tree tree) {
         assertRefused(tree.plan(FlatWorld.grass().set(tree.aLog(), "minecraft:bedrock", BlockQuery.Occupancy.SOLID),
                 Rotation.NONE, 320), PlacementPlan.Reason.PROTECTED_BLOCK);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void aSolidBlockInTheTrunkObstructsIt(String name) {
-        Tree tree = tree(name);
+    @MethodSource("trees")
+    void aSolidBlockInTheTrunkObstructsIt(Tree tree) {
         assertRefused(tree.plan(FlatWorld.grass().set(tree.aLog(), "minecraft:stone", BlockQuery.Occupancy.SOLID),
                 Rotation.NONE, 320), PlacementPlan.Reason.OBSTRUCTED);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void aTreeReachingIntoUngeneratedChunksWaits(String name) {
+    @MethodSource("trees")
+    void aTreeReachingIntoUngeneratedChunksWaits(Tree tree) {
         // Loaded only in the origin's column: every tree is wider than one block.
-        assertRefused(tree(name).plan(new FlatWorld("minecraft:grass_block", 0), Rotation.NONE, 320),
+        assertRefused(tree.plan(new FlatWorld("minecraft:grass_block", 0), Rotation.NONE, 320),
                 PlacementPlan.Reason.OUTSIDE_LOADED_REGION);
+    }
+
+    /** The hand-built jacarandas: acacia in the templates, jacaranda blocks in the world. */
+    @Test
+    void theJacarandasAcaciaBecomesJacarandaBlocksWithTheirBranchesIntact() throws Exception {
+        List<Tree> jacarandas = trees().filter(t -> t.species().id().equals(ArboretumId.arboretum("jacaranda"))).toList();
+        assertEquals(4, jacarandas.size());
+        for (Tree tree : jacarandas) {
+            Map<BlockPos, BlockStateRef> placed = tree.place(FlatWorld.grass(), Rotation.NONE).placements();
+            assertFalse(placed.values().stream().anyMatch(s -> s.blockId().startsWith("minecraft:acacia")),
+                    tree.chosen().name() + " placed acacia");
+            assertTrue(placed.values().stream().anyMatch(s -> s.blockId().equals("arboretum:jacaranda_wood")
+                    && !"y".equals(s.property("axis"))), tree.chosen().name() + " lost its sideways branches");
+            assertTrue(placed.values().stream().anyMatch(s -> s.blockId().equals("arboretum:jacaranda_leaves")));
+        }
     }
 
     // --- helpers ------------------------------------------------------------------------------
 
-    record Tree(SpeciesDefinition species, StructureTemplate trunk, StructureTemplate canopy,
-                StructureTemplate roots) {
+    record Tree(SpeciesDefinition species, TreeTemplates.Chosen chosen) {
+
+        Set<String> logs() {
+            return new TreePlacementPlanner(species).logBlocks();
+        }
+
+        Set<String> leaves() {
+            return new TreePlacementPlanner(species).leafBlocks();
+        }
 
         PlacementPlan plan(BlockQuery world, Rotation rotation, int maxY) {
             PlacementContext context = new PlacementContext(new BlockPos(0, 0, 0), rotation, 12345L,
                     -64, maxY, TreePlacementPlanner.groundFor(species));
-            return new TreePlacementPlanner(species).plan(context, trunk, canopy, roots, world);
+            return new TreePlacementPlanner(species).plan(context, chosen.trunk(), chosen.canopy(), chosen.roots(), world);
         }
 
         PlacementPlan.Placed place(FlatWorld world, Rotation rotation) {
             PlacementPlan plan = plan(world, rotation, 320);
-            return plan.placed().orElseThrow(() -> new AssertionError(species.id() + " " + rotation
+            return plan.placed().orElseThrow(() -> new AssertionError(this + " " + rotation
                     + " was refused: " + plan.refused().map(r -> r.reason() + ": " + r.detail()).orElse("")));
         }
 
         /** A log position of the unrotated tree, to put something in the way. */
         BlockPos aLog() {
             return place(FlatWorld.grass(), Rotation.NONE).placements().entrySet().stream()
-                    .filter(e -> e.getValue().blockId().equals(species.visuals().logBlockId()))
+                    .filter(e -> logs().contains(e.getValue().blockId()))
                     .map(Map.Entry::getKey).findFirst().orElseThrow();
         }
-    }
 
-    static Tree tree(String name) {
-        SpeciesDefinition species = bundle.catalogue().get(ArboretumId.arboretum(name))
-                .orElseThrow(() -> new AssertionError(name + " not in catalogue:\n" + bundle.describeProblems()));
-        SpeciesDefinition.Structure structure = species.structure();
-        Set<String> ground = TreePlacementPlanner.groundFor(species);
-        assertTrue(ground.contains("minecraft:grass_block"),
-                name + " can't root in grass, which the test world is made of: " + new TreeSet<>(ground));
-        return new Tree(species,
-                bundle.templates().load(structure.trunkTemplate()).orElseThrow(),
-                bundle.templates().load(structure.canopyTemplate()).orElseThrow(),
-                structure.hasRoots() ? bundle.templates().load(structure.rootsTemplate()).orElseThrow() : null);
+        @Override
+        public String toString() {
+            String name = chosen.name();
+            return species.id() + " (" + name.substring(name.lastIndexOf('/') + 1) + ")";
+        }
     }
 
     static void assertRefused(PlacementPlan plan, PlacementPlan.Reason reason) {

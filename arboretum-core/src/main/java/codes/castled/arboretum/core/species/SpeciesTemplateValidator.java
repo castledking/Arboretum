@@ -38,6 +38,26 @@ public final class SpeciesTemplateValidator {
         ValidationReport report = new ValidationReport(species.id().toString());
         SpeciesDefinition.Structure structure = species.structure();
 
+        if (structure.wholeTrees()) {
+            // Each whole tree stands alone: it must hold the trunk's logs and the leaves itself. A
+            // marker only some trees use is fine; one no tree uses is flagged.
+            List<StructureTemplate> trees = new ArrayList<>();
+            for (int i = 0; i < structure.templates().size(); i++) {
+                String field = "structure.templates[" + i + "]";
+                StructureTemplate tree = require(species, library, structure.templates().get(i).path(), field, report);
+                if (tree != null) {
+                    trees.add(tree);
+                    requireSome(species, tree, field, report);
+                    requireLogs(species, tree, field, report);
+                    checkLeafReach(species, List.of(tree), report);
+                }
+            }
+            if (trees.size() == structure.templates().size()) {
+                checkMarkers(species, trees, report);
+            }
+            return report;
+        }
+
         StructureTemplate trunk = require(species, library, structure.trunkTemplate(),
                 "structure.trunk_template", report);
         StructureTemplate canopy = require(species, library, structure.canopyTemplate(),
@@ -47,9 +67,10 @@ public final class SpeciesTemplateValidator {
             roots = require(species, library, structure.rootsTemplate(),
                     "structure.roots_template", report);
         }
-
         if (trunk != null) {
             requireSome(species, trunk, "structure.trunk_template", report);
+            // A canopy on its own is a floating blob: the trunk template has to hold the logs.
+            requireLogs(species, trunk, "structure.trunk_template", report);
         }
         if (canopy != null) {
             requireSome(species, canopy, "structure.canopy_template", report);
@@ -62,23 +83,20 @@ public final class SpeciesTemplateValidator {
                 loaded.add(template);
             }
         }
-        if (loaded.size() == (structure.hasRoots() ? 3 : 2)) {
+        int expected = 1 + (structure.canopyTemplate() != null ? 1 : 0) + (structure.hasRoots() ? 1 : 0);
+        if (loaded.size() == expected) {
             checkMarkers(species, loaded, report);
             checkLeafReach(species, loaded, report);
         }
-
-        // The trunk template has to contain log markers. A canopy on its own is a floating blob,
-        // and max_log_depth would never find ground because there is nothing to stand on.
-        if (trunk != null) {
-            long logBlocks = countMarkers(species, trunk, structure.logMarkers());
-            if (logBlocks == 0) {
-                report.error("structure.log_markers",
-                        "the trunk template contains none of them. The trunk template must hold the "
-                                + "tree's logs; leave the leaves to the canopy template.");
-            }
-        }
-
         return report;
+    }
+
+    private static void requireLogs(SpeciesDefinition species, StructureTemplate template, String field,
+                                    ValidationReport report) {
+        if (countMarkers(species, template, species.structure().logMarkers()) == 0) {
+            report.error(field, "contains none of the species' log_markers " + species.structure().logMarkers()
+                    + ". The template must hold the tree's trunk.");
+        }
     }
 
     private static StructureTemplate require(SpeciesDefinition species, TemplateLibrary library,

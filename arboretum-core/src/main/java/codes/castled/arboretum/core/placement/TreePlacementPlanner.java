@@ -118,7 +118,22 @@ public final class TreePlacementPlanner {
             replacements.put(species.visuals().rootBlockId(), species.visuals().rootBlockId());
         }
         species.structure().extraMarkers().forEach(replacements::put);
+        species.structure().markerBlocks().forEach(replacements::put);
         return Map.copyOf(replacements);
+    }
+
+    /** @return the blocks this species' log markers become, e.g. its log and its wood. */
+    public Set<String> logBlocks() {
+        Set<String> blocks = new java.util.TreeSet<>();
+        species.structure().logMarkers().forEach(marker -> blocks.add(species.structure().blockFor(marker)));
+        return blocks;
+    }
+
+    /** @return the blocks this species' leaf markers become. */
+    public Set<String> leafBlocks() {
+        Set<String> blocks = new java.util.TreeSet<>();
+        species.structure().leafMarkers().forEach(marker -> blocks.add(species.structure().blockFor(marker)));
+        return blocks;
     }
 
     public SpeciesDefinition species() {
@@ -159,11 +174,16 @@ public final class TreePlacementPlanner {
         ArboretumId id = species.id();
 
         // --- 1. Collect template blocks, refusing anything that cannot produce a tree ---------
+        // The trunk's base - the centre of its lowest layer of logs - lands on the origin, so a
+        // template copied from a world with its corner anywhere still grows where it was asked to.
+        BlockPos base = basePoint(trunk);
         List<PlacedBlock> candidates = new ArrayList<>();
-        collect(trunk, context, PlacementOrder.Kind.BRANCH, candidates);
-        collect(canopy, context, PlacementOrder.Kind.BRANCH, candidates);
+        collect(trunk, context, base, PlacementOrder.Kind.BRANCH, candidates);
+        if (canopy != null) {
+            collect(canopy, context, base, PlacementOrder.Kind.BRANCH, candidates);
+        }
         if (roots != null) {
-            collect(roots, context, PlacementOrder.Kind.BRANCH, candidates);
+            collect(roots, context, base, PlacementOrder.Kind.BRANCH, candidates);
         }
 
         if (candidates.isEmpty()) {
@@ -336,8 +356,38 @@ public final class TreePlacementPlanner {
     }
 
     /** Gathers the placements a template contributes, in placement-kind order. */
+    /**
+     * The trunk's base in template coordinates: the centre of the bounding box of its lowest layer
+     * of log markers. (0, 0, 0) for a template without logs.
+     */
+    public BlockPos basePoint(StructureTemplate template) {
+        int minY = Integer.MAX_VALUE;
+        for (TemplateBlock block : template.blocks()) {
+            BlockStateRef state = template.stateAt(block);
+            if (state != null && markerKinds.get(state.blockId()) == PlacementOrder.Kind.LOG) {
+                minY = Math.min(minY, block.pos().y());
+            }
+        }
+        if (minY == Integer.MAX_VALUE) {
+            return new BlockPos(0, 0, 0);
+        }
+        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
+        for (TemplateBlock block : template.blocks()) {
+            BlockStateRef state = template.stateAt(block);
+            if (state != null && block.pos().y() == minY
+                    && markerKinds.get(state.blockId()) == PlacementOrder.Kind.LOG) {
+                minX = Math.min(minX, block.pos().x());
+                maxX = Math.max(maxX, block.pos().x());
+                minZ = Math.min(minZ, block.pos().z());
+                maxZ = Math.max(maxZ, block.pos().z());
+            }
+        }
+        return new BlockPos(Math.floorDiv(minX + maxX, 2), minY, Math.floorDiv(minZ + maxZ, 2));
+    }
+
     private void collect(StructureTemplate template,
                          PlacementContext context,
+                         BlockPos base,
                          PlacementOrder.Kind defaultKind,
                          List<PlacedBlock> out) {
         Rotation rotation = context.rotation();
@@ -355,7 +405,7 @@ public final class TreePlacementPlanner {
                 continue;
             }
             BlockStateRef state = isMarker ? replacementFor(source) : source;
-            BlockPos rotated = rotation.rotate(block.pos());
+            BlockPos rotated = rotation.rotate(block.pos().offset(-base.x(), -base.y(), -base.z()));
             out.add(new PlacedBlock(
                     origin.offset(rotated.x(), rotated.y(), rotated.z()),
                     rotateState(state, rotation),
@@ -376,14 +426,21 @@ public final class TreePlacementPlanner {
     /** @return the block a marker becomes. */
     private BlockStateRef replacementFor(BlockStateRef marker) {
         String replacementId = markerReplacements.get(marker.blockId());
-        if (replacementId == null || replacementId.equals(marker.blockId())) {
-            return marker.withoutProperties();
-        }
-        // A replacement inherits nothing from the marker: the marker's properties describe the
-        // placeholder, not the block that goes there. Directional properties are re-applied by the
-        // rotation step from the replacement's own defaults.
-        return BlockStateRef.of(replacementId);
+        String id = replacementId == null ? marker.blockId() : replacementId;
+        // The block keeps the shape it was built with - a branch's axis - and nothing that belongs
+        // to the placed block's life: a hand-placed leaf is persistent and has a distance, and a
+        // grown one must decay like any other and gets its distance where it lands.
+        Map<String, String> kept = new LinkedHashMap<>();
+        marker.properties().forEach((name, value) -> {
+            if (!NOT_CARRIED.contains(name)) {
+                kept.put(name, value);
+            }
+        });
+        return new BlockStateRef(id, kept);
     }
+
+    /** Properties a marker never hands on to the block it becomes. */
+    static final Set<String> NOT_CARRIED = Set.of("persistent", "distance", "waterlogged");
 
     /**
      * Rotates the directional properties of a state.

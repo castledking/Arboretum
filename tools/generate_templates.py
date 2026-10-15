@@ -337,9 +337,10 @@ def build_italian_cypress(rng):
     return trunk.build(), canopy.build()
 
 
+# Placeholders for species whose real trees aren't built yet. The jacaranda's are: its species
+# lists the hand-built templates in templates/jacaranda/, so it is no longer generated.
 BUILDERS = {
     "baobab": build_baobab,
-    "jacaranda": build_jacaranda,
     "bald_cypress": build_bald_cypress,
     "italian_cypress": build_italian_cypress,
 }

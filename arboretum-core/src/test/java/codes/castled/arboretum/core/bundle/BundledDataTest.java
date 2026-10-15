@@ -8,6 +8,7 @@ import codes.castled.arboretum.core.collection.CollectionDefinition;
 import codes.castled.arboretum.core.collection.CollectionResolver;
 import codes.castled.arboretum.core.data.ValidationReport;
 import codes.castled.arboretum.core.id.ArboretumId;
+import codes.castled.arboretum.core.placement.TreeTemplates;
 import codes.castled.arboretum.core.species.GenerationMode;
 import codes.castled.arboretum.core.species.SpawningRule;
 import codes.castled.arboretum.core.species.SpeciesDefinition;
@@ -56,17 +57,28 @@ class BundledDataTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"baobab", "jacaranda", "bald_cypress", "italian_cypress"})
-    void trunksHoldTheLogsAndCanopiesTheLeaves(String name) {
+    void everyTreeHoldsItsLogsAndLeaves(String name) {
         SpeciesDefinition species = species(name);
-        StructureTemplate trunk = template(species.structure().trunkTemplate());
-        StructureTemplate canopy = template(species.structure().canopyTemplate());
-        assertTrue(count(trunk, species.structure().logMarkers()) > 0, "trunk has no log markers");
-        assertTrue(count(canopy, species.structure().leafMarkers()) > 0, "canopy has no leaf markers");
-        for (StructureTemplate template : List.of(trunk, canopy)) {
-            assertTrue(template.sizeX() <= 48 && template.sizeY() <= 64 && template.sizeZ() <= 48,
-                    template + " is " + template.sizeX() + "x" + template.sizeY() + "x" + template.sizeZ()
-                            + ", too large to be one tree");
+        List<TreeTemplates.Chosen> trees = TreeTemplates.all(species, bundle.templates());
+        assertFalse(trees.isEmpty(), name + " has no tree");
+        for (TreeTemplates.Chosen tree : trees) {
+            StructureTemplate leafy = tree.canopy() != null ? tree.canopy() : tree.trunk();
+            assertTrue(count(tree.trunk(), species.structure().logMarkers()) > 0, tree.name() + " has no log markers");
+            assertTrue(count(leafy, species.structure().leafMarkers()) > 0, tree.name() + " has no leaf markers");
+            for (StructureTemplate template : java.util.Arrays.asList(tree.trunk(), tree.canopy(), tree.roots())) {
+                if (template != null) {
+                    assertTrue(template.sizeX() <= 48 && template.sizeY() <= 64 && template.sizeZ() <= 48,
+                            template + " is too large to be one tree");
+                }
+            }
         }
+    }
+
+    @Test
+    void theJacarandaIsTheFourHandBuiltTrees() {
+        SpeciesDefinition jacaranda = species("jacaranda");
+        assertTrue(jacaranda.structure().wholeTrees());
+        assertEquals(4, TreeTemplates.all(jacaranda, bundle.templates()).size());
     }
 
     @Test

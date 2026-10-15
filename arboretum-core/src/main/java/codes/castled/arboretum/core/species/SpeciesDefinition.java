@@ -97,13 +97,17 @@ public record SpeciesDefinition(
      * @param trunkTemplate     resource path of the trunk template
      * @param canopyTemplate    resource path of the canopy template
      * @param rootsTemplate     optional resource path of a roots template
-     * @param logMarkers        template blocks treated as logs and replaced by {@code logBlockId}
+     * @param trunkTemplate     the trunk part, or null for a species of whole trees
+     * @param canopyTemplate    the canopy part, or null (a trunk template may hold its own leaves)
+     * @param logMarkers        template blocks treated as logs
      * @param leafMarkers       template blocks treated as leaves
      * @param extraMarkers      template block -> placed block, for roots, flowers, hanging strands
      * @param groundFilter      blocks the tree may grow on
      * @param leafFilter        blocks leaves may replace
      * @param logFilter         blocks logs may replace
      * @param replaceableBlocks the filter behaviour applied when a position is occupied
+     * @param templates         whole-tree templates, one picked per tree; empty for trunk/canopy parts
+     * @param markerBlocks      marker -> the block it becomes; a marker not listed stays itself
      */
     public record Structure(
             String trunkTemplate,
@@ -118,9 +122,13 @@ public record SpeciesDefinition(
             ReplaceableBlocks replaceableBlocks,
             int maxLogDepth,
             boolean randomRotation,
-            boolean allowMirroring
+            boolean allowMirroring,
+            List<Variant> templates,
+            Map<String, String> markerBlocks
     ) {
         public Structure {
+            templates = List.copyOf(templates);
+            markerBlocks = Map.copyOf(markerBlocks);
             logMarkers = List.copyOf(logMarkers);
             leafMarkers = List.copyOf(leafMarkers);
             extraMarkers = Map.copyOf(extraMarkers);
@@ -133,6 +141,25 @@ public record SpeciesDefinition(
         public boolean hasRoots() {
             return rootsTemplate != null && !rootsTemplate.isBlank();
         }
+
+        /** @return true when the species is a set of whole trees rather than trunk and canopy parts. */
+        public boolean wholeTrees() {
+            return !templates.isEmpty();
+        }
+
+        /** @return the block a marker becomes: its mapped block, or the marker itself. */
+        public String blockFor(String marker) {
+            return markerBlocks.getOrDefault(marker, marker);
+        }
+    }
+
+    /**
+     * One whole-tree template, and how often it is chosen against the species' others.
+     *
+     * @param path   the template's resource path, e.g. {@code data/arboretum/templates/jacaranda/jacaranda_01.nbt}
+     * @param weight relative chance of being chosen, at least 1
+     */
+    public record Variant(String path, int weight) {
     }
 
     /**
